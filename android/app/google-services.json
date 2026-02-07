@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1090030128051",
+    "project_id": "controltareas-3433d",
+    "storage_bucket": "controltareas-3433d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1090030128051:android:6951f1b360b260a58799c6",
+        "android_client_info": {
+          "package_name": "com.example.control_tareas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOgc3ecHctXDQNTzP-z70mbq6-rBSG_mI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

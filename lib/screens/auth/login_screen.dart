@@ -5,6 +5,7 @@ import '../worker/worker_home.dart';
 import '../supervisor/supervisor_home.dart';
 import '../../models/rol.dart';
 import '../../services/remote_data_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +17,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final usernameCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
+  bool _rememberSession = false;
 
   final data = RemoteDataService.instance;
 
@@ -40,6 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
           _loading = false;
         });
         return;
+      }
+
+      if (_rememberSession) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_id', user.id);
       }
 
       Widget destino;
@@ -134,6 +141,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.red),
                         ),
                       ],
+
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _rememberSession,
+                            onChanged: (v) {
+                              setState(() {
+                                _rememberSession = v ?? false;
+                              });
+                            },
+                          ),
+                          const Text("Mantener sesión iniciada"),
+                        ],
+                      ),
 
                       const SizedBox(height: 24),
 

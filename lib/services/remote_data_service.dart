@@ -14,6 +14,11 @@ import '../mappers/tarea_mapper.dart';
 import '../mappers/comentario_mapper.dart';
 
 import 'api_client.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class RemoteDataService extends ChangeNotifier {
   static final RemoteDataService instance = RemoteDataService._internal();
@@ -80,6 +85,28 @@ class RemoteDataService extends ChangeNotifier {
 
     _tareas.clear();
   }
+
+  Future<void> registerFcmToken(int userId) async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token == null) {
+        debugPrint('⚠️ No se pudo obtener FCM token');
+        return;
+      }
+
+      debugPrint('🔥 Registrando FCM token en backend: $token');
+
+      await api.postJson('/notifications/register-token', {
+        'userId': userId,
+        'fcmToken': token,
+        'platform': 'android',
+      });
+    } catch (e) {
+      debugPrint('❌ Error registrando FCM token: $e');
+    }
+  }
+
   /// 🔄 Refresca manualmente todos los datos desde el backend
   Future<void> refrescar() async {
     try {
@@ -162,6 +189,7 @@ class RemoteDataService extends ChangeNotifier {
 
     // (Opcional) refresca cache luego de login
     // await syncAll();
+    await registerFcmToken(user.id);
 
     return user;
   }
@@ -269,5 +297,25 @@ class RemoteDataService extends ChangeNotifier {
       if (u.esAdminGlobal) return true;
       return u.perteneceAEmpresa(empresaId);
     }).toList();
+  }
+
+  Future<void> subirImagenComentario({
+    required int tareaId,
+    required int userId,
+    required File file,
+  }) async {
+    final uri = Uri.parse(
+      "${ApiConfig.baseUrl}/tareas/$tareaId/comentarios/imagen",
+    );
+
+    final request = http.MultipartRequest("POST", uri)
+      ..fields["userId"] = "$userId"
+      ..files.add(await http.MultipartFile.fromPath("imagen", file.path));
+
+    final response = await request.send();
+
+    if (response.statusCode != 200) {
+      throw Exception("Error subiendo imagen: ${response.statusCode}");
+    }
   }
 }

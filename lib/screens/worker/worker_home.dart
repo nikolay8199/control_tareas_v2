@@ -9,6 +9,7 @@ import '../auth/login_screen.dart';
 import 'kanban_worker_screen.dart';
 import 'worker_task_detail.dart';
 import 'package:control_tareas/models/task_filter.dart';
+import '../../services/notification_intent_store.dart';
 
 class WorkerHome extends StatefulWidget {
   final Usuario user;
@@ -54,6 +55,16 @@ class _WorkerHomeState extends State<WorkerHome> {
     if (fb == null) return -1;
 
     return fa.compareTo(fb);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Ejecutar después del primer frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleNotificationIntent();
+    });
   }
 
   @override
@@ -180,6 +191,43 @@ class _WorkerHomeState extends State<WorkerHome> {
 
       ),
     );
+  }
+
+  Future<void> _handleNotificationIntent() async {
+    final intent = NotificationIntentStore.pending;
+    if (intent == null) return;
+
+    // Consumir una sola vez
+    NotificationIntentStore.pending = null;
+
+    if (intent.tipo == 'tarea' && intent.tareaId != null) {
+      final tareaId = int.tryParse(intent.tareaId!);
+      if (tareaId == null) return;
+
+      // 🔄 Asegurar datos frescos antes de navegar
+      await data.refrescar();
+
+      Tarea? tarea;
+      try {
+        tarea = data.tareas.firstWhere((t) => t.id == tareaId);
+      } catch (_) {
+        tarea = null;
+      }
+
+      if (tarea == null) return;
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WorkerTaskDetail(
+            tarea: tarea!,
+            user: widget.user,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _onRefresh() async {
