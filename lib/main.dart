@@ -19,6 +19,8 @@ import 'screens/worker/worker_home.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/remote_data_service.dart';
 
+import'dart:io';
+
 /// 🔔 Handler para notificaciones en background / terminated
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -28,31 +30,33 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Inicializar Firebase
-  await Firebase.initializeApp();
+  // 🔥 Firebase SOLO si NO es iOS
+  if (!Platform.isIOS) {
+    await Firebase.initializeApp();
 
-  // 🔔 Registrar handler background
-  FirebaseMessaging.onBackgroundMessage(
-    _firebaseMessagingBackgroundHandler,
-  );
+    // 🔔 Registrar handler background
+    FirebaseMessaging.onBackgroundMessage(
+      _firebaseMessagingBackgroundHandler,
+    );
 
-  // 1️⃣ App abierta desde notificación (cerrada)
-  RemoteMessage? initialMessage =
-  await FirebaseMessaging.instance.getInitialMessage();
+    // 1️⃣ App abierta desde notificación (cerrada)
+    RemoteMessage? initialMessage =
+    await FirebaseMessaging.instance.getInitialMessage();
 
-  if (initialMessage != null) {
-    NotificationIntentStore.pending =
-        NotificationIntent.fromData(initialMessage.data);
+    if (initialMessage != null) {
+      NotificationIntentStore.pending =
+          NotificationIntent.fromData(initialMessage.data);
+    }
+
+    // 2️⃣ App abierta desde background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      NotificationIntentStore.pending =
+          NotificationIntent.fromData(message.data);
+    });
+
+    // 🔔 Inicializar permisos + token
+    await NotificationService.init();
   }
-
-  // 2️⃣ App abierta desde background
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    NotificationIntentStore.pending =
-        NotificationIntent.fromData(message.data);
-  });
-
-  // 🔔 Inicializar permisos + token
-  await NotificationService.init();
 
   final remote = RemoteDataService.instance;
   await remote.init();
