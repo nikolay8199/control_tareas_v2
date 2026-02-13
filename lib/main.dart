@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 🔥 Firebase
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// 🔥 Firebase condicional (Android real / iOS stub)
+import 'firebase_stub.dart'
+if (dart.library.io) 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_stub.dart'
+if (dart.library.io) 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'services/notification_service.dart';
 import 'services/notification_intent_store.dart';
@@ -19,7 +22,7 @@ import 'screens/worker/worker_home.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/remote_data_service.dart';
 
-import'dart:io';
+import 'dart:io';
 
 /// 🔔 Handler para notificaciones en background / terminated
 @pragma('vm:entry-point')
@@ -115,14 +118,14 @@ class ControlTareasApp extends StatelessWidget {
 
           final user = snapshot.data!;
 
-          // 🧭 PASO 8: consumir intención DESPUÉS del login
+          // 🧭 Consumir intención DESPUÉS del login
           final intent = NotificationIntentStore.pending;
           if (intent != null) {
-            NotificationIntentStore.pending = null; // consumir solo una vez
+            NotificationIntentStore.pending = null;
 
             if (intent.tipo == 'tarea' && intent.tareaId != null) {
-              print('➡️ Intención: abrir tarea ${intent.tareaId}');
-              // ❌ NO navegamos todavía (eso será el siguiente paso)
+              debugPrint('➡️ Intención: abrir tarea ${intent.tareaId}');
+              // navegación real vendrá después
             }
           }
 
