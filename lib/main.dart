@@ -3,12 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 🔥 Firebase condicional (Android real / iOS stub)
-import 'firebase_stub.dart'
-if (dart.library.io) 'package:firebase_core/firebase_core.dart';
-
-import 'firebase_stub.dart'
-if (dart.library.io) 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase/firebase_init.dart';
 
 import 'services/notification_service.dart';
 import 'services/notification_intent_store.dart';
@@ -22,51 +17,22 @@ import 'screens/worker/worker_home.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/remote_data_service.dart';
 
-import 'dart:io';
-
 /// 🔔 Handler para notificaciones en background / terminated
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+Future<void> _firebaseMessagingBackgroundHandler(dynamic message) async {
+  // Solo Android usará Firebase realmente
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Firebase SOLO si NO es iOS
-  if (!Platform.isIOS) {
-    await Firebase.initializeApp();
-
-    // 🔔 Registrar handler background
-    FirebaseMessaging.onBackgroundMessage(
-      _firebaseMessagingBackgroundHandler,
-    );
-
-    // 1️⃣ App abierta desde notificación (cerrada)
-    RemoteMessage? initialMessage =
-    await FirebaseMessaging.instance.getInitialMessage();
-
-    if (initialMessage != null) {
-      NotificationIntentStore.pending =
-          NotificationIntent.fromData(initialMessage.data);
-    }
-
-    // 2️⃣ App abierta desde background
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      NotificationIntentStore.pending =
-          NotificationIntent.fromData(message.data);
-    });
-
-    // 🔔 Inicializar permisos + token
-    await NotificationService.init();
-  }
+  // 🔥 Inicialización por plataforma (Android sí, iOS no)
+  await initFirebasePlatform();
 
   final remote = RemoteDataService.instance;
   await remote.init();
 
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.immersiveSticky,
-  );
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   runApp(
     ChangeNotifierProvider.value(
@@ -118,14 +84,12 @@ class ControlTareasApp extends StatelessWidget {
 
           final user = snapshot.data!;
 
-          // 🧭 Consumir intención DESPUÉS del login
           final intent = NotificationIntentStore.pending;
           if (intent != null) {
             NotificationIntentStore.pending = null;
 
             if (intent.tipo == 'tarea' && intent.tareaId != null) {
               debugPrint('➡️ Intención: abrir tarea ${intent.tareaId}');
-              // navegación real vendrá después
             }
           }
 
