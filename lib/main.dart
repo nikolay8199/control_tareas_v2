@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'firebase/firebase_init.dart';
+// 🔥 Firebase
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'services/notification_service.dart';
 import 'services/notification_intent_store.dart';
@@ -17,22 +19,50 @@ import 'screens/worker/worker_home.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/remote_data_service.dart';
 
+import 'dart:io';
+
 /// 🔔 Handler para notificaciones en background / terminated
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(dynamic message) async {
-  // Solo Android usará Firebase realmente
-}
+// @pragma('vm:entry-point')
+// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+//   await Firebase.initializeApp();
+// }
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Inicialización por plataforma (Android sí, iOS no)
-  await initFirebasePlatform();
+  // 🔥 Firebase SOLO si NO es iOS
+  /*
+if (!Platform.isIOS) {
+  await Firebase.initializeApp();
+
+  FirebaseMessaging.onBackgroundMessage(
+    _firebaseMessagingBackgroundHandler,
+  );
+
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
+
+  if (initialMessage != null) {
+    NotificationIntentStore.pending =
+        NotificationIntent.fromData(initialMessage.data);
+  }
+
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    NotificationIntentStore.pending =
+        NotificationIntent.fromData(message.data);
+  });
+
+  await NotificationService.init();
+}
+*/
 
   final remote = RemoteDataService.instance;
   await remote.init();
 
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.immersiveSticky,
+  );
 
   runApp(
     ChangeNotifierProvider.value(
@@ -84,12 +114,14 @@ class ControlTareasApp extends StatelessWidget {
 
           final user = snapshot.data!;
 
+          // 🧭 PASO 8: consumir intención DESPUÉS del login
           final intent = NotificationIntentStore.pending;
           if (intent != null) {
-            NotificationIntentStore.pending = null;
+            NotificationIntentStore.pending = null; // consumir solo una vez
 
             if (intent.tipo == 'tarea' && intent.tareaId != null) {
-              debugPrint('➡️ Intención: abrir tarea ${intent.tareaId}');
+              print('➡️ Intención: abrir tarea ${intent.tareaId}');
+              // ❌ NO navegamos todavía (eso será el siguiente paso)
             }
           }
 

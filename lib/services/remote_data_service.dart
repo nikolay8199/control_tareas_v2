@@ -14,7 +14,7 @@ import '../mappers/tarea_mapper.dart';
 import '../mappers/comentario_mapper.dart';
 
 import 'api_client.dart';
-
+// import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -86,6 +86,29 @@ class RemoteDataService extends ChangeNotifier {
     _tareas.clear();
   }
 
+  /*
+  Future<void> registerFcmToken(int userId) async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token == null) {
+        debugPrint('⚠️ No se pudo obtener FCM token');
+        return;
+      }
+
+      debugPrint('🔥 Registrando FCM token en backend: $token');
+
+      await api.postJson('/notifications/register-token', {
+        'userId': userId,
+        'fcmToken': token,
+        'platform': 'android',
+      });
+    } catch (e) {
+      debugPrint('❌ Error registrando FCM token: $e');
+    }
+  }
+   */
+
   /// 🔄 Refresca manualmente todos los datos desde el backend
   Future<void> refrescar() async {
     try {
@@ -98,6 +121,7 @@ class RemoteDataService extends ChangeNotifier {
       rethrow;
     }
   }
+
   /// Carga inicial desde backend
   Future<void> init() async {
     if (_initialized) return;
@@ -111,7 +135,6 @@ class RemoteDataService extends ChangeNotifier {
       debugPrint('Error: $e');
       debugPrintStack(stackTrace: st);
 
-      // ✅ Solo usa defaults en debug. En release, NO lo ocultes.
       if (kDebugMode) {
         _seedDefaults();
         _initialized = true;
@@ -119,7 +142,6 @@ class RemoteDataService extends ChangeNotifier {
         return;
       }
 
-      // ❌ En producción: propaga el error para que lo veas y la app no "finja" que todo está ok
       rethrow;
     }
     debugPrint('🚀 RemoteDataService.init() ejecutado');
@@ -134,23 +156,34 @@ class RemoteDataService extends ChangeNotifier {
 
       _usuarios
         ..clear()
-        ..addAll(u.map((x) => UsuarioMapper.fromJson((x as Map).cast<String, dynamic>())));
+        ..addAll(
+          u.map((x) =>
+              UsuarioMapper.fromJson((x as Map).cast<String, dynamic>())),
+        );
 
       _empresas
         ..clear()
-        ..addAll(e.map((x) => EmpresaMapper.fromJson((x as Map).cast<String, dynamic>())));
+        ..addAll(
+          e.map((x) =>
+              EmpresaMapper.fromJson((x as Map).cast<String, dynamic>())),
+        );
 
       _tareas
         ..clear()
-        ..addAll(t.map((x) => TareaMapper.fromJson((x as Map).cast<String, dynamic>())));
+        ..addAll(
+          t.map((x) =>
+              TareaMapper.fromJson((x as Map).cast<String, dynamic>())),
+        );
 
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ syncAll() fallo. Posible endpoint con respuesta no esperada.');
+      debugPrint(
+          '❌ syncAll() fallo. Posible endpoint con respuesta no esperada.');
       debugPrint('Error: $e');
       rethrow;
     }
   }
+
   // ======================
   // AUTH
   // ======================
@@ -164,10 +197,10 @@ class RemoteDataService extends ChangeNotifier {
     final userJson = res['user'];
     if (userJson == null) return null;
 
-    final user = UsuarioMapper.fromJson((userJson as Map).cast<String, dynamic>());
+    final user =
+    UsuarioMapper.fromJson((userJson as Map).cast<String, dynamic>());
 
-    // (Opcional) refresca cache luego de login
-    // await syncAll();
+    // await registerFcmToken(user.id);
 
     return user;
   }
@@ -182,7 +215,9 @@ class RemoteDataService extends ChangeNotifier {
   }
 
   Future<void> actualizarUsuario(Usuario usuarioActualizado) async {
-    await api.patchJson('/usuarios/${usuarioActualizado.id}', UsuarioMapper.toJson(usuarioActualizado));
+    await api.patchJson(
+        '/usuarios/${usuarioActualizado.id}',
+        UsuarioMapper.toJson(usuarioActualizado));
     await syncAll();
   }
 
@@ -201,7 +236,9 @@ class RemoteDataService extends ChangeNotifier {
   }
 
   Future<void> editarEmpresa(Empresa empresaActualizada) async {
-    await api.patchJson('/empresas/${empresaActualizada.id}', EmpresaMapper.toJson(empresaActualizada));
+    await api.patchJson(
+        '/empresas/${empresaActualizada.id}',
+        EmpresaMapper.toJson(empresaActualizada));
     await syncAll();
   }
 
@@ -211,14 +248,13 @@ class RemoteDataService extends ChangeNotifier {
   }
 
   // ======================
-  // TAREAS (mismo comportamiento que tu DataService, pero persistiendo en backend)
+  // TAREAS
   // ======================
 
   Future<void> crearTarea({
     required Usuario actor,
     required Tarea tarea,
   }) async {
-    // Validaciones frontend (porque frontend manda)
     if (!actor.esAdminGlobal && !actor.perteneceAEmpresa(tarea.empresaId)) {
       throw Exception('No tiene permiso para crear tareas en esta empresa');
     }
@@ -253,12 +289,13 @@ class RemoteDataService extends ChangeNotifier {
     required int tareaId,
     required Comentario comentario,
   }) async {
-    await api.postJson('/tareas/$tareaId/comentarios', ComentarioMapper.toJson(comentario));
+    await api.postJson(
+        '/tareas/$tareaId/comentarios', ComentarioMapper.toJson(comentario));
     await syncAll();
   }
 
   // ======================
-  // Helpers (iguales a tu DataService)
+  // Helpers
   // ======================
 
   List<Tarea> tareasPorUsuario(int usuarioId) =>
