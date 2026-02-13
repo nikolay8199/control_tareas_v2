@@ -14,7 +14,7 @@ import '../mappers/tarea_mapper.dart';
 import '../mappers/comentario_mapper.dart';
 
 import 'api_client.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -84,27 +84,6 @@ class RemoteDataService extends ChangeNotifier {
       ]);
 
     _tareas.clear();
-  }
-
-  Future<void> registerFcmToken(int userId) async {
-    try {
-      final token = await FirebaseMessaging.instance.getToken();
-
-      if (token == null) {
-        debugPrint('⚠️ No se pudo obtener FCM token');
-        return;
-      }
-
-      debugPrint('🔥 Registrando FCM token en backend: $token');
-
-      await api.postJson('/notifications/register-token', {
-        'userId': userId,
-        'fcmToken': token,
-        'platform': 'android',
-      });
-    } catch (e) {
-      debugPrint('❌ Error registrando FCM token: $e');
-    }
   }
 
   /// 🔄 Refresca manualmente todos los datos desde el backend
@@ -189,7 +168,6 @@ class RemoteDataService extends ChangeNotifier {
 
     // (Opcional) refresca cache luego de login
     // await syncAll();
-    await registerFcmToken(user.id);
 
     return user;
   }

@@ -1,27 +1,15 @@
 import 'dart:io';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:permission_handler/permission_handler.dart';
+
+import '../notifications/notification_service_ios.dart' as ios;
+import '../notifications/notification_service_android.dart' as android;
+
 
 class NotificationService {
   static Future<void> init() async {
-    print('🔔 NotificationService.init()');
-
-    if (Platform.isAndroid) {
-      final status = await Permission.notification.status;
-      print('🔐 Notification permission: $status');
-
-      if (!status.isGranted) {
-        await Permission.notification.request();
-      }
+    if (Platform.isIOS) {
+      await ios.NotificationService.init();
+    } else {
+      await android.NotificationService.init();
     }
-
-    // 🔥 Obtener token explícitamente
-    final token = await FirebaseMessaging.instance.getToken();
-    print('🔥 FCM TOKEN (getToken): $token');
-
-    // 🔁 Escuchar cuando el token se genera o cambia
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-      print('♻️ FCM TOKEN REFRESHED: $newToken');
-    });
   }
 }
