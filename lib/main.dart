@@ -58,7 +58,7 @@ if (!Platform.isIOS) {
 */
 
   final remote = RemoteDataService.instance;
-  await remote.init();
+  //await remote.init();
 
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.immersiveSticky,
